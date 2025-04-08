@@ -85,12 +85,7 @@
         "label": "Support",
         "href": "https://github.com/Kiruse/apophis-sdk/issues"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
+    ]
   },
   "footer": {
     "socials": {
