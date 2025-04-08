@@ -11,86 +11,50 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Apophis SDK",
         "groups": [
           {
             "group": "Get Started",
             "pages": [
-              "introduction",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Essentials",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
+              "projects/apophis-sdk/introduction"
             ]
           }
         ]
       },
       {
-        "tab": "API Reference",
+        "tab": "Mintlify",
         "groups": [
           {
-            "group": "API Documentation",
+            "group": "Get Started",
             "pages": [
-              "api-reference/introduction"
+              "mintlify/introduction",
+              "mintlify/quickstart",
+              "mintlify/development"
             ]
           },
           {
-            "group": "Endpoint Examples",
+            "group": "Essentials",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "mintlify/essentials/markdown",
+              "mintlify/essentials/code",
+              "mintlify/essentials/images",
+              "mintlify/essentials/settings",
+              "mintlify/essentials/navigation",
+              "mintlify/essentials/reusable-snippets"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "https://github.com/Kiruse/apophis-sdk/issues"
-      }
-    ]
-  },
   "footer": {
     "socials": {
       "x": "https://x.com/0xKiruse",
-      "github": "https://github.com/Kiruse/apophis-sdk"
+      "github": "https://github.com/Kiruse"
     }
   }
 }
