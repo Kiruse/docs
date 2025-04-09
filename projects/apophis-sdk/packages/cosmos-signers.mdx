@@ -1,0 +1,73 @@
+---
+title: "Apophis - Cosmos Signers"
+description: "A bundle of signers for the Cosmos ecosystem."
+---
+
+The `@apophis-sdk/cosmos-signers` package is a bundle of signers for the Cosmos ecosystem. It
+includes the following signers:
+
+- `KeplrSigner` & `LeapSigner` from the [@apophis-sdk/keplr-signer](https://docs.kiruse.dev/projects/apophis-sdk/packages/keplr-signer) package
+- `WalletConnectCosmosSigner` from the [@apophis-sdk/walletconnect-signer](https://docs.kiruse.dev/projects/apophis-sdk/packages/walletconnect-signer) package
+
+Other signers will be added in the future. Particularly, I'm eyeing:
+
+- Direct [Ledger](https://ledger.com) support (i.e. no wallet like Keplr needed)
+- Direct [Keystone](https://keyst.one) support
+- Rujira Station (formerly [Station](https://station.money)), once it's been released
+- [Vultisig](https://vultisig.com)
+- [CosmIFrame](https://github.com/DA0-DA0/cosmiframe) (DAODAO support)
+
+**Example:**
+
+```ts
+import { registerCosmosSigners } from "@apophis-sdk/cosmos-signers";
+
+const WALLETCONNECT_PROJECT_ID = '...';
+
+registerCosmosSigners(WALLETCONNECT_PROJECT_ID);
+```
+
+Of course, you can also manually register only the signers you need:
+
+```ts
+import { KeplrSigner, LeapSigner, WalletConnectCosmosSigner } from "@apophis-sdk/cosmos-signers";
+Signer.register(
+  new KeplrSigner(),
+  new LeapSigner(),
+  new WalletConnectCosmosSigner({ projectId: WALLETCONNECT_PROJECT_ID }),
+);
+```
+
+## Using Signers
+The core library exposes the `signals` object which in turn exposes the `signer` signal. Throughout
+the SDK, this signal is often used as fallback when not providing a specific signer. Similarly, the
+[Cosmos Components](/projects/cosmos-components) populate this signal when a signer is connected
+through the Wallet Modal.
+
+The below example shows how to use the `signer` to sign and broadcast a transaction within Preact:
+
+```ts
+import { signals } from "@apophis-sdk/core";
+import { Cosmos } from "@apophis-sdk/cosmos";
+import { useMemo } from "preact/hooks";
+import { useComputed } from "@preact/signals";
+
+function MyComponent() {
+  const msgs = useComputed(() => [
+    new Bank.Send({
+      fromAddress: signals.address.value,
+      toAddress: 'neutron1...', // e.g. your developer address
+      amount: [Cosmos.coin(1_000000n, 'untrn')],
+    }),
+  ]);
+
+  const tx = useMemo(() => Cosmos.signalTx(msgs), [msgs]);
+
+  return (
+    <button onClick={() => {
+      const txHash = await tx.signAndBroadcast(); // uses `signals.signer` internally when not specified above during `signalTx` call
+      console.log(txHash);
+    }}>Send Payment</button>
+  );
+}
+```

@@ -1,0 +1,61 @@
+---
+title: "Apophis SDK WalletConnect Integration"
+description: "WalletConnect integration for the Apophis SDK."
+---
+
+The `@apophis-sdk/walletconnect-signer` package implements a signer that uses WalletConnect to
+connect to a mobile wallet. It is currently only supported on mobile devices.
+
+## Usage
+The WalletConnect signer differs rather dramatically from the other signers due to the asynchronous
+dual-device nature of WalletConnect. If you use the complementary [Cosmos Components](/projects/cosmos-components)
+package, it already handles WalletConnect for you, and you merely need to call `Signer.register`.
+But if you intend to build your own connection modal, there are some things to consider:
+
+```ts
+import { signals } from "@apophis-sdk/core";
+import { WalletConnectCosmosSigner } from "@apophis-sdk/walletconnect-signer";
+
+const signer = new WalletConnectCosmosSigner({
+  projectId: '...',
+});
+
+// Begins the WalletConnect flow.
+signer.connect().then(() => {
+  signals.signer.value = signer;
+});
+
+signer.state.subscribe(state => {
+  switch (state.state) {
+    case 'pending':
+      hideSpinner();
+      // The signer is still waiting for the second device to connect & approve.
+      if (!state.uri) {
+        console.warn('The URI should always be present if your WalletConnect project is properly configured.');
+        return;
+      }
+      showQRCode(state.uri);
+      break;
+    case 'connected':
+      hideSpinner();
+      // The connection may have been restored from a previous session. This flag tells you if it was.
+      // The Cosmos Components' Wallet Modal uses this to prevent immediately re-connecting if the
+      // modal was opened with a previously connected WalletConnect session.
+      if (state.restored) {
+        // ...
+      }
+      break;
+    case 'error':
+      hideSpinner();
+      showErrorToast(state.error);
+      break;
+    case undefined:
+      // Initializing
+      showSpinner();
+      break;
+  }
+});
+```
+
+Note that the above code is a simplified example, with functions like `showQRCode` and `showErrorToast`
+that must be defined by you.

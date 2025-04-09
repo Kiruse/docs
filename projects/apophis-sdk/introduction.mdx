@@ -1,6 +1,126 @@
 ---
 title: Introduction
-description: "Welcome to the home of your new documentation"
+description: "What is the Apophis SDK?"
 ---
 
-TODO
+Apophis is a Web3 SDK designed for the blockchain omniverse. Originally built for the Cosmos
+ecosystem, I've refactored it to generalize to more ecosystems, particularly EVM & SVM - although
+each ecosystem will have its own specializations.
+
+Apophis is designed to be easy to get into and to accelerate your development process. Its objective
+is to accomplish much with as little code as possible.
+
+## Etymology
+
+[Apophis is the Egyptian serpent deity](https://www.worldhistory.org/Apophis/) of darkness, chaos,
+and destruction. [99942 Apophis](https://en.wikipedia.org/wiki/99942_Apophis) is also an asteroid
+that appeared out of nowhere in the early 2000s and threatened to destroy all that exists (which has
+since been ruled out, don't worry). Many projects in the Cosmos ecosystem are named after celestial
+bodies, and this SDK is no exception. I've chosen Apophis, the asteroid that showed up out of nowhere,
+as the namesake of this project, as it aims to destroy the chaos left by its progenitor.
+
+## Packages
+In order to support the plethora of contemporary & vastly diverse blockchains, the SDK must be
+hyper-modular. It consists of multiple packages of different levels of abstraction:
+
+- `core` - Common generalizations for the omniverse of blockchains. Constains things like types,
+  utilities, the middleware subsystem, common encodings, and signals.
+- `cosmos` - A specialization of the Apophis SDK for the Cosmos ecosystem.
+- `cosmwasm` - An extension of the `cosmos` package, adding support for CosmWasm.
+- `cosmos-signers` - A bundle package of signers for the Cosmos ecosystem. Currently only contains
+  the `keplr-signer` (which includes support for [Keplr](https://keplr.app/) &
+  [Leap](https://leapwallet.io/)) and `walletconnect-signer` packages.
+
+To install the SDK, use your favorite package manager's equivalent of:
+
+```bash
+npm install @apophis-sdk/core @apophis-sdk/cosmos @apophis-sdk/cosmwasm @apophis-sdk/cosmos-signers
+```
+
+All packages are published in bulk and are locked to the same version, such that `@apophis-sdk/cosmos`
+has a peer-dependency on `@apophis-sdk/core` of the same version.
+
+## Quickstart
+Following is a simple example you might use to build a simple CLI tool to send a transaction on the
+Neutron testnet to yourself.
+
+```ts
+import { Apophis, Cosmos, DefaultCosmosMiddlewares, LocalSigner } from '@apophis-sdk/cosmos';
+
+Apophis.use(...DefaultCosmosMiddlewares);
+
+const mnemonic = '...';
+
+const signer = LocalSigner.fromMnemonic(mnemonic);
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+
+const tx = Cosmos.tx([
+  new Bank.Send({
+    fromAddress: signer.address,
+    toAddress: signer.address,
+    amount: [Cosmos.coin(1n, 'untrn')],
+  }),
+]);
+
+await tx.estimateGas(network, signer, true); // true stores the gas price in the tx object
+await signer.sign(network, tx);
+const result = await tx.broadcast(network);
+
+// success does not indicate that the tx was actually successful, only that it hasn't been rejected
+// prior to execution, e.g. if the user has insufficient funds to cover gas.
+if (result.success) {
+  try {
+    await Cosmos.ws(network).expectTx(tx);
+    console.log('tx successful:', tx.hash);
+  } catch (error) {
+    console.error('tx failed:', error);
+  }
+}
+```
+
+## Web Components
+I've built another package for the development of Web3 Dapps called
+[`@kiruse/cosmos-components`](https://docs.kiruse.dev/projects/cosmos-components). It is complementary
+to the Apophis SDK following the same philosophy of DX-first:
+
+```tsx
+import { signals } from '@apophis-sdk/core';
+import { Apophis, Cosmos, DefaultCosmosMiddlewares } from '@apophis-sdk/cosmos';
+import { CosmosComponents, reconnectSigner } from '@kiruse/cosmos-components';
+import { render } from 'preact';
+
+Apophis.use(...DefaultCosmosMiddlewares);
+
+// though you may want to hard-code these to remove the async overhead
+const networks = Promise.all([
+  Cosmos.getNetworkFromRegistry('neutron'),
+  Cosmos.getNetworkFromRegistry('neutrontestnet'),
+  Cosmos.getNetworkFromRegistry('cosmoshub'),
+  Cosmos.getNetworkFromRegistry('osmosis'),
+  Cosmos.getNetworkFromRegistry('terra2'),
+]);
+
+// Register all components
+CosmosComponents.register();
+
+networks.then((networks) => {
+  reconnectSigner(networks);
+});
+
+render(<MyApp />, document.body);
+
+function MyApp() {
+  return (
+    <cosmos-connect-boundary>
+      <div slot="content">
+        Welcome, <cosmos-user-address />!
+      </div>
+      <div slot="connect">
+        <button
+          onClick={async () => modals.showWalletModal(await networks)}
+        >Connect Wallet</button>
+      </div>
+    </cosmos-connect-boundary>
+  );
+}
+```

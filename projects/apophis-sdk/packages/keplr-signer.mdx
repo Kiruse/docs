@@ -1,0 +1,24 @@
+---
+title: "Apophis - Keplr Signer"
+description: "A signer integration for Keplr & Leap."
+---
+
+This package exposes the `KeplrSigner`, and a derived class `LeapSigner`. `KeplrSigner` is a
+specialization of the `Signer` class from `@apophis-sdk/core` designed to make it easier to
+integrate new [Keplr](https://keplr.app) forks (such as [Leap](https://leapwallet.io)).
+
+## Usage
+
+```ts
+import { Signer } from "@apophis-sdk/core";
+import { KeplrSigner, LeapSigner } from "@apophis-sdk/keplr-signer";
+
+Signer.register(
+  new KeplrSigner(),
+  new LeapSigner(),
+);
+```
+
+## Deriving from KeplrSigner
+
+***TODO***

@@ -1,0 +1,58 @@
+---
+title: "Apophis SDK Core"
+description: "Contains the most generic definitions common to most blockchain ecosystems I've worked with. However, by itself, it is probably mostly uninteresting to you."
+---
+
+The core package is concerned with standardizing aspects of web3 development across ecosystems. It
+contains such things as:
+
+- `NetworkConfig`
+- Various `signals`
+- Generalized `pubkey` factory and `PublicKey` type
+- [Middleware](/projects/apophis-sdk/middleware) `mv` subsystem
+- WebSocket abstraction `PowerSocket`
+- Generalized type interfaces, such as `TxBase` and `Signer<Tx extends TxBase>`
+- [protobuf](https://protobuf.dev/) support (WIP)
+- Shared business logic with deferrals to middlewares for ecosystem-specific implementations
+
+## Network Configs
+Among the most important concepts in the SDK are `NetworkConfig`s. These are used to configure the
+SDK for a specific blockchain, including which RPC to use. Most of the SDK is built on
+`NetworkConfig`s. Importantly, each `NetworkConfig` is referenced by instance. If your custom systems
+require generalization or persistence, it should generally refer to the network's `name` or
+`chainId` instead.
+
+While both are unique identifiers for a chain, the `name` refers to the current canonical name of
+the chain, while `chainId` uniquely identifies a specific hard fork of a chain. For example,
+"cosmoshub" refers to the latest version of the Cosmos Hub as agreed upon by its active validator
+set, while "cosmoshub-4" refers to a specific version of the Hub. But generally, you are likely fine
+just using `name` for most purposes.
+
+## Signals
+Signals are technically an optional feature of the SDK, but a highly useful one. They act as a sort
+of lightweight dependency injection system, allowing you to inject certain frequently-used values
+into the application, and making it easier to manage through a GUI (e.g. a Wallet Modal).
+
+The `signals` object contains the following signals:
+
+- `signer` (*signal*) for the currently connected signer,
+- `network` (*signal*) for the currently connected network,
+- `chainId` (*computed*) for the chain ID of the currently connected network,
+- `publicKey` (*computed*) for the public key of the currently connected address,
+- `address` (*computed*) for the currently connected address,
+- `bech32prefix` (*computed*) for the Bech32 prefix of the currently connected network, if applicable.
+
+## Public Keys
+Every blockchain is based on the cryptographic primitive of key pairs, even if abstracted away behind
+social logins or multi-sig wallets. However, their representation may differ from chain to chain.
+The `pubkey` wraps the different types of public keys, but has otherwise no knowledge of how to
+serialize or encode them; this is provided by other packages like `@apophis/cosmos` through the
+middleware system.
+
+As a consumer of the SDK, you will likely only need the `pubkey` factory.
+
+## PowerSocket
+An abstraction of WebSocket clients based on the native WebSocket API. It provides a solid, stateful
+foundation to help integration developers to maintain connections to full nodes.
+
+As a consumer of the SDK, you will likely never need the `PowerSocket` class itself.

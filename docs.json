@@ -16,7 +16,28 @@
           {
             "group": "Get Started",
             "pages": [
-              "projects/apophis-sdk/introduction"
+              "projects/apophis-sdk/introduction",
+              "projects/apophis-sdk/raison-detre",
+              "projects/apophis-sdk/cosmos",
+              "projects/apophis-sdk/cosmwasm",
+              "projects/apophis-sdk/cosmos-signers"
+            ]
+          },
+          {
+            "group": "@apophis-sdk/core",
+            "pages": [
+              "projects/apophis-sdk/core/overview"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Cosmos Components",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "projects/cosmos-components/introduction"
             ]
           }
         ]
