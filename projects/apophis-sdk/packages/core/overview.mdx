@@ -10,7 +10,6 @@ contains such things as:
 - Various `signals`
 - Generalized `pubkey` factory and `PublicKey` type
 - [Middleware](/projects/apophis-sdk/middleware) `mv` subsystem
-- WebSocket abstraction `PowerSocket`
 - Generalized type interfaces, such as `TxBase` and `Signer<Tx extends TxBase>`
 - [protobuf](https://protobuf.dev/) support (WIP)
 - Shared business logic with deferrals to middlewares for ecosystem-specific implementations
@@ -50,9 +49,3 @@ serialize or encode them; this is provided by other packages like `@apophis/cosm
 middleware system.
 
 As a consumer of the SDK, you will likely only need the `pubkey` factory.
-
-## PowerSocket
-An abstraction of WebSocket clients based on the native WebSocket API. It provides a solid, stateful
-foundation to help integration developers to maintain connections to full nodes.
-
-As a consumer of the SDK, you will likely never need the `PowerSocket` class itself.

@@ -28,6 +28,32 @@
             "pages": [
               "projects/apophis-sdk/core/overview"
             ]
+          },
+          {
+            "group": "@apophis-sdk/cosmos",
+            "pages": [
+              "projects/apophis-sdk/cosmos/overview",
+              "projects/apophis-sdk/cosmos/rest-api",
+              "projects/apophis-sdk/cosmos/ws-api",
+              "projects/apophis-sdk/cosmos/transactions"
+            ]
+          },
+          {
+            "group": "@apophis-sdk/cosmwasm",
+            "pages": [
+              "projects/apophis-sdk/cosmwasm/overview",
+              "projects/apophis-sdk/cosmwasm/queries",
+              "projects/apophis-sdk/cosmwasm/contract-messages"
+            ]
+          },
+          {
+            "group": "@apophis-sdk/cosmos-signers",
+            "pages": [
+              "projects/apophis-sdk/cosmos-signers/overview",
+              "projects/apophis-sdk/cosmos-signers/keplr",
+              "projects/apophis-sdk/cosmos-signers/leap",
+              "projects/apophis-sdk/cosmos-signers/walletconnect"
+            ]
           }
         ]
       },

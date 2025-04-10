@@ -1,0 +1,69 @@
+---
+title: "Apophis SDK - Cosmos WebSocket API"
+description: "Apophis provides a WebSocket API abstraction for Cosmos RPCs."
+---
+
+The `Cosmos` object also exposes a `ws(network)` method that allows you to interact with the
+WebSocket API of a full node. Some WebSocket endpoints have overlap with the REST API, but others
+are unique to the WebSocket API. Most importantly, it abstracts block and transaction subscriptions
+through the `.onBlock` and `.onTx` methods.
+
+**Beware** that most public nodes enforce a strict rate limit of 5 subscriptions per client. If you
+require more, you will need to run your own isolated full node. However, typically, 5 subscriptions
+is enough for most Dapps.
+
+```ts
+import { Cosmos, TendermintQuery } from '@apophis-sdk/cosmos';
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+
+const ws = Cosmos.ws(network);
+ws.onBlock(block => {
+  console.log('New block:', block.header.height);
+});
+
+let query = new TendermintQuery().exact('tx.hash', '<my-hash>');
+
+ws.onTx(query, tx => {
+  console.log('Tx confirmed:', tx.hash);
+});
+```
+
+It also exposes an `expectTx` method which you can use to await the confirmation of a transaction:
+
+```ts
+const tx = Cosmos.tx([/* ... */]);
+
+const result = await ws.expectTx(tx);
+console.log(result);
+```
+
+## Tendermint Queries
+Tendermint is underlying the Cosmos SDK and provides a way for full nodes to index and query
+transactions based on events and their attributes emitted by the Cosmos SDK modules and smart
+contracts.
+
+The `TendermintQuery` class is a builder for Tendermint queries. It provides a fluent interface for
+building queries and is a first-class citizen in Apophis' WebSocket API.
+
+```ts
+const address = 'neutron1...';
+const query = new TendermintQuery().exact('message.sender', address);
+
+ws.onTx(query, tx => {
+  console.log(`Tx sent by ${address}:`, tx.hash);
+});
+```
+
+There are some built-in query keys:
+
+- `block.height`
+- `message.sender`
+- **TODO: List built-in query keys**
+
+But you can also query by attributes emitted on the `Response` of your smart contract:
+
+**TODO: Example**
+
+*Sorry for the incomplete state of this documentation. The missing parts I need to re-discover
+myself. :)*

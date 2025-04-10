@@ -1,0 +1,61 @@
+---
+title: "Apophis SDK - Cosmos Transactions"
+description: "Apophis aims to make it as simple as possible to deal with transactions."
+---
+
+There are two invariant types of transactions in the Apophis SDK:
+
+- `CosmosTx` is the fundamental transaction type for all transactions in Cosmos, including
+- `CosmosTxSignal`, which wraps a `CosmosTx` into multiple signals specialized for use in a GUI.
+
+## CosmosTx
+***TODO***
+
+## CosmosTxSignal
+A `CosmosTxSignal` is an invariant that wraps a `CosmosTx` with various signals for use in a GUI.
+Unlike the regular `CosmosTx`, this invariant takes a signal of messages, and automatically updates
+and re-estimates the gas of the transaction when the messages change. It also periodically refreshes
+the estimage to account for changes in the state of the blockchain while the user is still
+contemplating their transaction.
+
+The following example demonstrates the use of the `Cosmos.signalTx` factory method using Preact as
+its frontend framework:
+
+```ts
+import { signals } from '@apophis-sdk/core';
+import { Apophis, Bank, Cosmos, DefaultCosmosMiddlewares } from '@apophis-sdk/cosmos';
+import { useComputed } from 'preact/signals';
+import { useMemo } from 'preact/hooks';
+
+Apophis.use(...DefaultCosmosMiddlewares);
+
+Cosmos.getNetworkFromRegistry('neutrontestnet').then(network => {
+  signals.network.value = network;
+});
+
+function MyComponent() {
+  // There is no base type for messages. The only thing that matters is that the SDK knows how to
+  // serialize and deserialize them, which is implemented through the middleware subsystem.
+  const msgs = useComputed(() => [
+    new Bank.Send({
+      fromAddress: signals.address.value,
+      toAddress: 'neutron1...', // e.g. your own address
+      amount: [Cosmos.coin(1_000000n, 'untrn')], // 1 NTRN
+    }),
+  ]);
+
+  const tx = useMemo(() => Cosmos.signalTx(msgs));
+
+  return (
+    <div>
+      <button onClick={() => tx.signAndBroadcast()}>
+        Send payment
+      </button>
+      <cosmos-gas-estimate tx={tx} />
+    </div>
+  );
+}
+```
+
+The above `cosmos-gas-estimate` component is a custom element from the complementary
+[Cosmos Components](/projects/cosmos-components) library.

@@ -1,6 +1,6 @@
 ---
 title: "Apophis SDK Cosmwasm Integration"
-description: "Cosmwasm integration on top of the Cosmos integration."
+description: "CosmWasm integration on top of the Cosmos integration."
 ---
 
 The CosmWasm module serves primarily as a user-friendly and convenient wrapper for a set of
@@ -44,29 +44,6 @@ await CosmWasm.execute(
   [Cosmos.coin(1_000000n, 'untrn')], // optional native coin "funds" to pass along the call
 );
 ```
-
-## Queries
-There are four types of queries. Three of these queries are direct wrappers of RPC methods. The last
-is a non-RPC query for the CW2 standard:
-
-- **Smart Queries** are the queries a developer defines as part of their smart contract. They are
-  typically JSON-encoded by convention, but a smart contract developer is technically free to choose
-  any other format - though they should prepare for the backlash from the wider community. ;)
-
-- **Raw Queries** are extremely low-level and require knowledge of the storage layout of a smart
-  contract. In CosmWasm, state is stored as pairs of binary keys and binary serialized values. As
-  most smart contracts use [cw-storage-plus](https://github.com/CosmWasm/cw-storage-plus), the format
-  of these keys is typically the same, and Apophis can simplify raw storage lookup. If you need to
-  access non-standard raw storage, you can still use the `Cosmos.rest(network)` endpoint directly.
-
-- **State Queries** are related to Raw Queries. They facilitate iterating over the entire low-level
-  storage of a smart contract with pagination. However, as items of lists and maps are stored in
-  the same key-value store without abstraction, it's mainly useful for manually inspecting the state
-  of a smart contract.
-
-- **Contract Info Queries** are a non-RPC query for the [CW2](https://crates.io/crates/cw2) standard.
-  This standard defines the `contract_info` key, which contains the name and version of a smart
-  contract. Apophis simply fetches this value using its own *Raw Query* implementation.
 
 ## Outlook
 There is still work to be done on the CosmWasm integration. Namely, further abstraction of smart

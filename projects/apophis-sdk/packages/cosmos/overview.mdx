@@ -1,0 +1,84 @@
+---
+title: "Apophis SDK Cosmos Integration"
+description: "Cosmos SDK integration, with Cosmos-specific specializations."
+---
+
+Currently the only blockchain integration for the Cosmos ecosystem. Its most important export is the
+`Cosmos` object:
+
+```ts
+import {
+  Apophis,
+  Bank,
+  Cosmos,
+  DefaultCosmosMiddlewares,
+  LocalSigner,
+} from '@apophis-sdk/cosmos';
+Apophis.use(...DefaultCosmosMiddlewares);
+
+// Get a `CosmosNetworkConfig` for the Neutron Testnet from the
+// Cosmos Chain Registry: https://github.com/cosmos/chain-registry
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+
+// For testing or tooling only! Strongly discouraged in a production Dapp!
+// See https://github.com/kiruse/cosmos-components for a Dapp solution.
+const signer = LocalSigner.fromMnemonic('...');
+
+// Wait for WebSockets to be ready (if you plan to use them).
+await Cosmos.ws(network).ready();
+
+// Get the current block
+const { block } = await Cosmos.ws(network).getBlock();
+console.log(block.header.hash, block.header.height, block.header.timestamp);
+// Types are deserialized: block.header.height is a bigint, and
+// block.header.timestamp is a Date
+
+// Tx factory, takes arbitrary messages in
+// Note that only a small subset of messages are currently implemented
+const tx = Cosmos.tx([
+  new Bank.Send({
+    fromAddress: signer.address(network),
+    toAddress: signer.address(network),
+    amount: [Cosmos.coin(1_000000n, 'untrn')],
+  }),
+]);
+
+// `true` here automatically populates the tx's internal gas fee field
+await tx.estimateGas(network, signer, true);
+
+// upon signing, the tx becomes bound to the given network
+await signer.sign(network, tx);
+
+// broadcasting returns immediately and does not wait for confirmation
+await tx.broadcast();
+
+// but it waits for admission - i.e. the tx is valid, but not yet finalized
+if (tx.status === 'success') {
+  // You can wait for finalization like this:
+  const result = await Cosmos.ws(network).expectTx(tx);
+  console.log(result);
+}
+
+// no matter what, even if the tx hasn't been broadcasted yet, you can get its hash:
+console.log(tx.hash);
+```
+
+Although not a hard requirement, when developing Dapps, it is useful to use the `signals` from the
+`core` library:
+
+```ts
+import { signals } from '@apophis-sdk/core';
+
+signals.network.subscribe(network => {
+  console.log('Switched to network:', network);
+});
+
+signals.address.subscribe(address => {
+  console.log('Active address:', address);
+});
+```
+
+Using these `signals` makes it trivial to create integrations for specific frontend frameworks
+without having to worry about frontend-specific usage. These signals can even be used without any
+frontend framework at all, enabling you to use the same Apophis SDK for both frontend and backend
+development.

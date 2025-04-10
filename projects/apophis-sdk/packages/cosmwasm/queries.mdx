@@ -1,0 +1,108 @@
+---
+title: "Apophis SDK - CosmWasm Queries"
+description: "The CosmWasm integration provides simplifications for the most common queries on smart contracts."
+---
+
+There are currently four types of queries in the CosmWasm integration. Three of these queries are
+direct wrappers of RPC methods. The last is a non-RPC query for the CW2 standard:
+
+## Smart Queries
+**Smart Queries** are the queries a developer defines as part of their smart contract. They are
+typically JSON-encoded by convention, but a smart contract developer is technically free to choose
+any other format - though they should prepare for the backlash from the wider community. ;)
+
+```ts
+import { Apophis, Cosmos } from '@apophis-sdk/cosmos';
+import { CosmWasm, DefaultCosmWasmMiddlewares } from '@apophis-sdk/cosmwasm';
+
+Apophis.use(...DefaultCosmWasmMiddlewares);
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+const contract = 'neutron1...';
+
+const data = await CosmWasm.query.smart<MyResponse>(network, contract, CosmWasm.toBinary({
+  myQuery: {},
+}));
+console.log(data); // typically, the response is already JSON-decoded by the RPC
+```
+
+## Raw Queries
+**Raw Queries** are extremely low-level and require knowledge of the storage layout of a smart
+contract. In CosmWasm, state is stored as pairs of binary keys and binary serialized values. As
+most smart contracts use [cw-storage-plus](https://github.com/CosmWasm/cw-storage-plus), the format
+of these keys is typically the same, and Apophis can simplify raw storage lookup. If you need to
+access non-standard raw storage, you can still use the `Cosmos.rest(network)` endpoint directly.
+
+```ts
+import { Apophis, Cosmos } from '@apophis-sdk/cosmos';
+import { CosmWasm, DefaultCosmWasmMiddlewares } from '@apophis-sdk/cosmwasm';
+
+Apophis.use(...DefaultCosmWasmMiddlewares);
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+const contract = 'neutron1...';
+
+const data = await CosmWasm.query.raw(network, contract, ['my_state_key']);
+console.log(data); // this data is binary. its meaning is specific to the smart contract.
+```
+
+The beauty of raw queries is that you can query any state item of a smart contract, including data
+that it does not expose via smart queries. Often, smart contract developers expose only a small
+surface of smart queries simply because they don't think the additional data is interesting to the
+consumer, or it would just blow out of proportion. With *raw queries*, you can query any state item
+you're interested in.
+
+Apophis makes this vastly easier. State storage is a binary key-value pair. The key is typically a
+specially encoded string array. Apophis can both encode and decode this string array for you. Or,
+you can pass in a `Uint8Array` directly and it will be used as-is, in case your smart contract does
+not use `cw-storage-plus` and thus does not adhere to the standard format.
+
+## State Queries
+**State Queries** are related to Raw Queries. They facilitate iterating over the entire low-level
+storage of a smart contract with pagination. However, as items of lists and maps are stored in
+[cw-storage-plus](https://github.com/CosmWasm/cw-storage-plus), the format of these keys is typically
+the same, and Apophis can simplify raw storage lookup. If you need to
+access non-standard raw storage, you can still use the `Cosmos.rest(network)` endpoint directly.
+
+```ts
+import { Apophis, Cosmos } from '@apophis-sdk/cosmos';
+import { CosmWasm, DefaultCosmWasmMiddlewares } from '@apophis-sdk/cosmwasm';
+
+Apophis.use(...DefaultCosmWasmMiddlewares);
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+const contract = 'neutron1...';
+
+let pagination: PaginationResponse;
+do {
+  const response = await CosmWasm.query.state(network, contract, pagination?.nextKey);
+  console.log(response.items); // this data is binary. its meaning is specific to the smart contract.
+  pagination = response.pagination;
+} while (pagination.nextKey);
+```
+
+State Queries are very rarely needed. They are an incredibly verbose way to query data, as the RPC
+iterates over ALL state items of a smart contract, which includes all entries in a map. On its own,
+it likely has no real use for Dapps, but it can be incredibly useful for debugging, introspection,
+and reverse engineering.
+
+## Contract Info Queries
+**Contract Info Queries** are non-RPC queries, i.e. they are not defined in the RPC directly but are
+defined as a standard on a *Raw Query* through the [CW2](https://crates.io/crates/cw2) standard.
+
+CW2 defines the `contract_info` storage key, which contains the name and version of a smart
+contract. Apophis simply fetches this value using its own *Raw Query* implementation. It contains
+the name and version of the smart contract as defined by its developer (i.e. may contain untruths).
+
+```ts
+import { Apophis, Cosmos } from '@apophis-sdk/cosmos';
+import { CosmWasm, DefaultCosmWasmMiddlewares } from '@apophis-sdk/cosmwasm';
+
+Apophis.use(...DefaultCosmWasmMiddlewares);
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+const contract = 'neutron1...';
+
+const { contract, version } = await CosmWasm.query.contractInfo(network, contract);
+console.log(contract, version);
+```

@@ -1,0 +1,35 @@
+---
+title: "Apophis SDK - Contract Messages"
+description: "CosmWasm smart contracts are based on messages. This page describes how Apophis intends to simplify messaging."
+---
+
+**This part of Apophis is still under development.**
+
+As part of another library ([CosmWasm Pipeline](https://github.com/kiruse/cw-pipeline)), I will
+provide an alternative code generator for your smart contract messages that will be integrated with
+Apophis. *CWPipeline* is my CLI tool to assist in the development of smart contracts.
+
+## The Problem
+
+The prevailing solution to generating JS/TS code to communicate with your smart contracts is to
+generate JSON schemas with the [cosmwasm-schema](https://crates.io/crates/cosmwasm-schema) crate,
+then to generate TypeScript code from these schemas, e.g. using
+[json-schema-to-typescript](https://www.npmjs.com/package/json-schema-to-typescript).
+
+This is an absolutely awful pipeline as it produces code that cannot properly capture the actual
+types, as JSON schemas simply cannot express the proper types. It has no awareness of serialized
+types. It makes no distinction between stringified numbers and serialized byte arrays. It has no
+idea if a stringified number is a `Uint256` or a `Decimal`, or if a serialized byte array is in
+hexadecimal or base64 encoding. We are losing type information, and thus need to re-insert it by
+manually serializing and deserializing data according to our smart contract's needs.
+
+## The Solution
+Apophis already vastly simplifies smart contract messaging. The new solution will, just like
+`cosmwasm-schema`, expose a `generate_api!` macro that generates type declarations using mapped
+original types in the smart contract rather than serialized types. The de/serialization middleware
+of Apophis abstracts away the actual serialization, so as a smart contract developer you will rarely
+need to actually know how to de/serialize your data, e.g. you can pass `Coin` or `bigint`s directly
+into your messages.
+
+Note that Apophis already handles de/serialization for you. This part is just about generating the
+type declarations for convenience and better code maintainability.

@@ -1,0 +1,34 @@
+---
+title: "Apophis SDK - Cosmos REST API"
+description: "Apophis provides a REST API abstraction for Cosmos RPCs."
+---
+
+The `Cosmos` object exposes a `rest(network)` method that allows you to call RPC methods exposed
+through HTTPS. RPC endpoints are mapped directly to the REST API object structure:
+
+```ts
+import { Cosmos } from '@apophis-sdk/cosmos';
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+
+const { balances, pagination } = await Cosmos.rest(network).bank.v1beta1.balances['neutron1...']('GET');
+console.log(balances);
+```
+
+## Virtual Typing
+The REST API is built on top of my [@kiruse/restful](https://github.com/kiruse/restful.ts) library
+which leverages a "virtual typing" system. This means that even if an endpoint is not defined in
+the Apophis SDK, you can still call it using the same pattern as above. Simply refer to your chain's
+OpenAPI specification and pass in the appropriate parameters.
+
+```ts
+import { Cosmos } from '@apophis-sdk/cosmos';
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+
+const api = await Cosmos.rest(network) as any;
+
+// I genuinely have no idea if this endpoint exists, but it demonstrates the point
+const { items, pagination } = await api.authz.v1beta1['neutron1...'].grants('GET');
+console.log(items);
+```
