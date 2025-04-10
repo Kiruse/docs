@@ -17,10 +17,7 @@
             "group": "Get Started",
             "pages": [
               "projects/apophis-sdk/introduction",
-              "projects/apophis-sdk/raison-detre",
-              "projects/apophis-sdk/cosmos",
-              "projects/apophis-sdk/cosmwasm",
-              "projects/apophis-sdk/cosmos-signers"
+              "projects/apophis-sdk/raison-detre"
             ]
           },
           {
@@ -32,27 +29,27 @@
           {
             "group": "@apophis-sdk/cosmos",
             "pages": [
-              "projects/apophis-sdk/cosmos/overview",
-              "projects/apophis-sdk/cosmos/rest-api",
-              "projects/apophis-sdk/cosmos/ws-api",
-              "projects/apophis-sdk/cosmos/transactions"
+              "projects/apophis-sdk/packages/cosmos/overview",
+              "projects/apophis-sdk/packages/cosmos/rest-api",
+              "projects/apophis-sdk/packages/cosmos/ws-api",
+              "projects/apophis-sdk/packages/cosmos/transactions"
             ]
           },
           {
             "group": "@apophis-sdk/cosmwasm",
             "pages": [
-              "projects/apophis-sdk/cosmwasm/overview",
-              "projects/apophis-sdk/cosmwasm/queries",
-              "projects/apophis-sdk/cosmwasm/contract-messages"
+              "projects/apophis-sdk/packages/cosmwasm/overview",
+              "projects/apophis-sdk/packages/cosmwasm/queries",
+              "projects/apophis-sdk/packages/cosmwasm/contract-messages"
             ]
           },
           {
             "group": "@apophis-sdk/cosmos-signers",
             "pages": [
-              "projects/apophis-sdk/cosmos-signers/overview",
-              "projects/apophis-sdk/cosmos-signers/keplr",
-              "projects/apophis-sdk/cosmos-signers/leap",
-              "projects/apophis-sdk/cosmos-signers/walletconnect"
+              "projects/apophis-sdk/packages/cosmos-signers/overview",
+              "projects/apophis-sdk/packages/cosmos-signers/keplr",
+              "projects/apophis-sdk/packages/cosmos-signers/leap",
+              "projects/apophis-sdk/packages/cosmos-signers/walletconnect"
             ]
           }
         ]
