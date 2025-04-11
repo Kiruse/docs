@@ -1,0 +1,74 @@
+---
+title: "Creating Custom Elements"
+description: "Learn different ways to create custom elements with your framework."
+---
+
+## Converting Frontend Framework Components to Custom Elements
+Reactive Frontend Frameworks like React, Preact, and Vue implement their own virtual DOM systems.
+This vDOM is not directly compatible with the actual light and shadow DOM of the browser. However,
+often, there are ways to convert these components to proper web components.
+
+Preact has the [`preact-custom-element` package](https://github.com/preactjs/preact-custom-element)
+which makes it a matter of a few lines of code to convert a Preact component into a custom element.
+
+```tsx
+import { register } from 'preact-custom-element';
+
+function MyComponent({ name = "World" }: { name?: string }) {
+  return <div>Hello {name}!</div>;
+}
+
+register(
+  MyComponent,
+  'x-my-component',
+  ["name"],
+);
+```
+
+## Rendering into an HTMLElement
+If your frontend framework is missing such a utility, or if you prefer to implement your own - e.g.
+because it is missing some functionality you need - you will need to implement your own. While this
+is usually not too difficult, it does require some knowledge of the internals of your framework.
+
+### Preact
+The `subrender` function above is such an example:
+
+```ts
+import { JSX, render } from 'preact';
+
+export type SubAppContent = JSX.Element | (() => JSX.Element);
+
+export function subrender(
+  content: SubAppContent,
+  root: HTMLElement,
+  shadow: 'none' | 'open' | 'closed' = 'open',
+) {
+  const _root = shadow === 'none' ? root : root.attachShadow({ mode: shadow });
+  render(typeof content === 'function' ? content() : content, _root);
+  return () => {
+    render(null, _root);
+  };
+}
+```
+
+### React
+A `subrender` function for React is very similar:
+
+```ts
+import { JSX } from 'react';
+import { createRoot } from 'react-dom/client';
+
+export type SubAppContent = JSX.Element | (() => JSX.Element);
+
+export function subrender(
+  content: SubAppContent,
+  root: HTMLElement,
+  shadow: 'none' | 'open' | 'closed' = 'open',
+) {
+  const _root = createRoot(shadow === 'none' ? root : root.attachShadow({ mode: shadow }));
+  _root.render(typeof content === 'function' ? content() : content);
+  return () => {
+    _root.unmount();
+  };
+}
+```

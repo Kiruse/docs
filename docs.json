@@ -23,7 +23,7 @@
           {
             "group": "@apophis-sdk/core",
             "pages": [
-              "projects/apophis-sdk/core/overview"
+              "projects/apophis-sdk/packages/core/overview"
             ]
           },
           {
@@ -60,7 +60,18 @@
           {
             "group": "Get Started",
             "pages": [
-              "projects/cosmos-components/introduction"
+              "projects/cosmos-components/introduction",
+              "projects/cosmos-components/html",
+              "projects/cosmos-components/jsx",
+              "projects/cosmos-components/modals",
+              "projects/cosmos-components/toasts"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "projects/cosmos-components/customizing",
+              "projects/cosmos-components/creating-custom-elements"
             ]
           }
         ]

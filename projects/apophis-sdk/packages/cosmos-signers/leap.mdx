@@ -1,0 +1,22 @@
+---
+title: "Leap Wallet Integration"
+description: "A signer integration for Leap Wallet."
+---
+
+[Leap](https://leapwallet.io/) is a fork of [Keplr](https://keplr.app/) that is compatible with the
+Keplr API. Thus, the `LeapSigner` is contained within the same `@apophis-sdk/keplr-signer` package.
+
+## Usage
+
+```ts
+import { Signer } from "@apophis-sdk/core";
+import { KeplrSigner, LeapSigner } from "@apophis-sdk/keplr-signer";
+
+Signer.register(
+  new KeplrSigner(),
+  new LeapSigner(),
+);
+```
+
+For more information see the [Keplr Signer](/projects/apophis-sdk/packages/cosmos-signers/keplr)
+page.

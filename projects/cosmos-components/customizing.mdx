@@ -1,0 +1,72 @@
+---
+title: "Customizing"
+description: "Cosmos Components can be customized in various ways."
+---
+
+Cosmos Components can be customized in 3 main ways, with different levels of control and complexity:
+
+- Changing the default styles of the root and part components,
+- Using design tokens (CSS variables aka. custom properties) to change colors, fonts, and other properties,
+- Replacing them entirely with your own custom elements.
+
+All aspects of components are documented in the [Storybook](https://cosmos-components.kiruse.dev).
+
+## Changing the default styles
+As you would with any other HTML element, you can simply add your own styles to the root and part
+components. For example, you can make balances more uniform:
+
+```css
+cosmos-balance {
+  background-color: #f0f0f0;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+cosmos-balance::part(value) {
+  font-family: monospace;
+  width: 4rem;
+  text-align: right;
+}
+
+cosmos-balance::part(denom) {
+  text-transform: uppercase;
+}
+```
+
+## Using design tokens
+All design tokens are documented in the [Storybook](https://cosmos-components.kiruse.dev). All
+design tokens have default values, but you can override them as needed:
+
+```css
+:root {
+  --cosmos-spacing: 10px;
+  --cosmos-roundness: 6px;
+  --cosmos-primary-color-500:rgb(247, 156, 65);
+}
+```
+
+Specifying them on `:root` sets them for your entire application, but they can also be set on
+every single CSS selector you can come up with.
+
+## Replacing components
+Once a custom element has been registered, there is no way to unregister or override it. Thus,
+the `CosmosComponents` class lets you decide which components you wish to use and which you wish to
+replace with your own.
+
+```ts
+import { CosmosComponents } from '@kiruse/cosmos-components';
+
+class MyWalletModal extends HTMLElement {
+  // ... define your custom element
+}
+
+CosmosComponents.default()
+  .with('cosmos-modal-wallet', MyWalletModal)
+  .register();
+```
+
+However, your custom element will need to support the same attributes/properties as the original, as
+some of them are used internally by the library itself (e.g. `cosmos-user-address` builds upon
+`cosmos-address`).
+
+All attributes are documented in the [Storybook](https://cosmos-components.kiruse.dev).

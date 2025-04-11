@@ -1,0 +1,36 @@
+---
+title: "JSX Support"
+description: "The Cosmos Components are web components with JSX bindings for Preact and React."
+---
+
+As web components, the Cosmos Components are directly usable in both HTML and JSX. However, For
+TypeScript projects, you will need to import the JSX bindings for your frontend framework of choice,
+or integrate them manually. Bindings currently exist for Preact and React.
+
+```ts
+import '@kiruse/cosmos-components/preact.js';
+// or
+import '@kiruse/cosmos-components/react.js';
+```
+
+## Manual Integration
+The Cosmos Components export a convenient type `CosmosElements` which you can use to extend the
+`IntrinsicElements` interface of your frontend framework. Following is an example of how I've
+integrated them with Preact:
+
+```ts
+import type { CosmosElements } from '@kiruse/cosmos-components';
+
+declare module 'preact/jsx-runtime' {
+  namespace JSX {
+    interface IntrinsicElements extends CosmosElements {}
+  }
+}
+```
+
+Place this anywhere in your project and import where needed, or use as ambient module (requires
+changes to `tsconfig.json`).
+
+TypeScript accepts a configuration option `jsxImportSource` which often needs to be defined for
+a non-React project. Whatever value you set here is the module you need to augment in the snippet
+above, plus the `/jsx-runtime` path.

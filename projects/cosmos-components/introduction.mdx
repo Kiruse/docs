@@ -1,0 +1,46 @@
+---
+title: "Introduction"
+description: "A collection of Web Components for Cosmos Dapps."
+---
+
+The [@apophis-sdk/cosmos-components](https://github.com/Kiruse/cosmos-components) package is a
+collection of Web Components to bootstrap and elevate the development experience of Cosmos Dapps.
+
+## Usage
+
+```ts
+import { Apophis, Cosmos, DefaultCosmosMiddlewares } from '@apophis-sdk/cosmos';
+import { CosmosComponents } from '@kiruse/cosmos-components';
+import { reconnectSigner } from '@kiruse/cosmos-components/utils.js';
+import '@kiruse/cosmos-components/preact.js'; // imports JSX types for Preact
+
+Apophis.use(...DefaultCosmosMiddlewares);
+
+CosmosComponents.register();
+
+const networks = Promise.all([
+  Cosmos.getNetworkFromRegistry('neutron'),
+  Cosmos.getNetworkFromRegistry('neutrontestnet'),
+  Cosmos.getNetworkFromRegistry('cosmoshub'),
+]);
+
+networks.then(networks => {
+  reconnectSigner(networks);
+});
+```
+
+There's two main usages for the Cosmos Components:
+
+1. [Vanilla HTML](/projects/cosmos-components/html)
+2. [JSX](/projects/cosmos-components/jsx)
+
+See their respective pages for more information.
+
+## Storybook
+All components are showcased and documented in the
+[Cosmos Components Storybook](https://cosmos-components.kiruse.dev).
+
+## Contributing
+Most certainly, there are still some useful general purpose components missing from this library.
+I always welcome feedback & contributions! Feel free to suggest new components at the
+[issues](https://github.com/Kiruse/cosmos-components/issues) or open a PR.

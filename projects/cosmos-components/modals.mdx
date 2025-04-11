@@ -1,0 +1,101 @@
+---
+title: "Modals"
+description: "Cosmos Components include some modals out of the box."
+---
+
+Modals are the least intrusive way to provide a default user experience on top of your own application.
+Frankly, I am not quite sure how to best design them to integrate nicely with your own modals and
+am open to suggestions.
+
+## Spawning Modals
+Modals are spawned with the `modals` object's methods:
+
+```ts
+import { Apophis, Cosmos, DefaultCosmosMiddlewares } from '@apophis-sdk/cosmos';
+import { modals } from '@kiruse/cosmos-components';
+
+Apophis.use(...DefaultCosmosMiddlewares);
+
+const networks = Promise.all([
+  Cosmos.getNetworkFromRegistry('neutron'),
+  Cosmos.getNetworkFromRegistry('neutrontestnet'),
+]);
+
+// Error Modal takes in `any`
+modals.showErrorModal('An error occurred');
+
+networks.then(networks => modals.showWalletModal(networks));
+```
+
+Unlike other components, there are two ways to replace modals:
+
+- Replace the `cosmos-modal-base` component with your own custom element, or
+- Replace the properties of the `modals` object.
+
+## Replacing the `cosmos-modal-base` component
+
+Currently, the best way to create a uniform modal design is to replace the `cosmos-modal-base`
+component with your own custom element.
+
+```ts
+import { CosmosComponents } from '@kiruse/cosmos-components';
+
+class MyModal extends HTMLElement {
+  // ... define your custom element
+}
+
+CosmosComponents.default()
+  .with('cosmos-modal-base', MyModal)
+  .register();
+```
+
+Alternatively, of course, you could simply build your own modals on top of `cosmos-modal-base`
+and customize them to your liking.
+
+There are currently 2 modals in the library:
+
+- `cosmos-modal-wallet` - A modal for selecting & connecting a wallet.
+- `cosmos-modal-error` - A modal for displaying an error to the user.
+
+## Custom Error Formatters
+The Error Modal takes in any argument, and iterates over its formatters to attempt to stringify the
+error. If it succeeds, it displays the formatted error. Otherwise, it JSON-stringifies the error and
+displays that. It comes with a few built-in formatters for common errors such as "Out of Gas",
+"Insufficient Funds", `Error` instances, etc.
+
+You can also define your own formatters:
+
+```ts
+import { formatError } from '@kiruse/cosmos-components';
+
+formatError.addFormatter(error => {
+  if (error instanceof Error && error.message.includes('insufficient funds')) {
+    return 'Insufficient funds';
+  }
+});
+```
+
+If your custom formatter returns `undefined`, it will be ignored. If no formatter returns a value,
+the modal will display the JSON-stringified error.
+
+The expected return value is either a string or an `HTMLElement`. You can use a frontend framework
+like React, Preact, or Vue to render your error message, however, you will need to render it into
+an `HTMLElement` and handle cleanup when the modal is `remove`d. Refer to
+[Creating Custom Elements](/projects/cosmos-components/creating-custom-elements) for more information.
+
+## Replacing the `modals` methods
+Rather than exporting the Modals methods directly, exporting them under a `modals` object allows you
+to replace the methods with your own custom ones. This allows you to integrate the Cosmos Components
+with your own frontend framework.
+
+Unlike Toasts, Modals are more specialized for specific use cases & data:
+
+```tsx modals-shim.ts
+import { type NetworkConfig } from '@apophis-sdk/core';
+import { modals } from '@kiruse/cosmos-components';
+
+modals.showErrorModal = (error: any) => myModalFactory.showErrorModal(error);
+modals.showWalletModal = (networks: NetworkConfig[]) => myModalFactory.showWalletModal(networks);
+```
+
+This will allow the Cosmos Components to use your own toast system.

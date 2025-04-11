@@ -1,0 +1,99 @@
+---
+title: "Toasts"
+description: "Cosmos Components include some toasts out of the box."
+---
+
+Toasts are a simple way to feed back information to the user. They are used within the library e.g.
+to show error notifications or confirmations, such as copying an address to the clipboard.
+
+See the [Storybook](https://cosmos-components.kiruse.dev/?path=/story/toast--default)
+for a demonstration & documentation of the different toasts.
+
+## Spawning Toasts
+Much like modals, toasts are spawned with the `toast` object's methods:
+
+```ts
+import { toast } from '@kiruse/cosmos-components';
+
+toast.info('This is an info toast');
+```
+
+Unlike other components, but much like modals, there are two ways to replace toasts:
+
+- Replace the `cosmos-toast` component with your own custom element, or
+- Replace the properties of the `toast` object.
+
+## Error Link Toasts
+Currently, the only special toast is the `toast.errorlink` toast. It takes & a short message and
+produces a toast with a link to spawn an error modal with the formatted error details.
+
+```ts
+import { toast } from '@kiruse/cosmos-components';
+
+toast.errorlink(new Error('This is an error'), { message: 'An error occurred' });
+```
+
+## Replacing the `cosmos-toast` component
+
+Currently, the best way to create a uniform toast design is to replace the `cosmos-toast`
+component with your own custom element.
+
+```ts
+import { CosmosComponents } from '@kiruse/cosmos-components';
+
+class MyToast extends HTMLElement {
+  // ... define your custom element
+}
+
+CosmosComponents.default()
+  .with('cosmos-toast', MyToast)
+  .register();
+```
+
+Alternatively, of course, you could simply build your own toasts on top of `cosmos-toast`
+and customize them to your liking.
+
+Toasts come in 4 `variant`s:
+
+- `info`
+- `success`
+- `warning`
+- `error`
+
+And typically have a `lifespan`.
+
+## Replacing the `toast` methods
+Rather than exporting the Toast methods directly, exporting them under a `toast` object allows you
+to replace the methods with your own custom ones. This allows you to integrate the Cosmos Components
+with your own frontend framework. The `info`, `success`, `warning`, and `error` methods internally
+call the `toast.show` method with the appropriate variant.
+
+```tsx toast-shim.ts
+import { toast, type ToastAttributes } from '@kiruse/cosmos-components';
+
+toast.show = (content: HTMLElement | string, attributes: ToastAttributes = {}) => {
+  myToastFactory.show({ content, attributes });
+};
+
+function MyToast({ content, attributes }: { content: HTMLElement | string, attributes: ToastAttributes }) {
+  const [container, setContainer] = useState<HTMLDivElement>();
+
+  useEffect(() => {
+    if (!container) return;
+    container.innerHTML = '';
+    container.appendChild(content);
+  }, [container]);
+
+  useEffect(() => {
+    attributes.lifespan && setTimeout(() => {
+      container?.remove();
+    }, attributes.lifespan);
+  }, []);
+
+  return (
+    <div ref={setContainer} className={attributes.variant} />
+  );
+}
+```
+
+This will allow the Cosmos Components to use your own toast system.

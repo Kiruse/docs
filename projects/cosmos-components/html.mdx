@@ -1,0 +1,97 @@
+---
+title: "Vanilla HTML"
+description: "The Cosmos Components can be used in vanilla HTML."
+---
+
+I particularly wanted these Cosmos Components to be usable in vanilla HTML, without any bundler
+or frontend framework whatsoever. I find this is great for prototyping and simple projects.
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Example Dapp</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@kiruse/cosmos-components": "https://esm.sh/@kiruse/cosmos-components",
+          "@apophis-sdk/core": "https://esm.sh/@apophis-sdk/core",
+          "@apophis-sdk/cosmos": "https://esm.sh/@apophis-sdk/cosmos",
+          "@apophis-sdk/cosmwasm": "https://esm.sh/@apophis-sdk/cosmwasm",
+        }
+      }
+    </script>
+    <script type="module" src="setup.js"></script>
+  </head>
+  <body>
+    <cosmos-connect-boundary>
+      <div slot="connect">
+        <button id="connect-wallet">Connect Wallet</button>
+      </div>
+      <div slot="content">
+        Hello, <cosmos-user-address />!
+      </div>
+    </cosmos-connect-boundary>
+    <script type="module" src="index.js"></script>
+  </body>
+</html>
+```
+
+Note that not all browsers support separate import maps, so for the time being you will need to
+always inline it in your HTML.
+
+```js setup.js
+import { CosmosElements } from '@kiruse/cosmos-components';
+import { reconnectSigners } from '@kiruse/cosmos-components/utils.js';
+import { Apophis, Cosmos } from '@apophis-sdk/cosmos';
+import { CosmWasm, DefaultCosmWasmMiddlewares } from '@apophis-sdk/cosmwasm';
+
+Apophis.use(...DefaultCosmWasmMiddlewares);
+CosmosElements.register();
+
+// in a `type="module"` script you can `await` on top level scope
+export const networks = Promise.all([
+  Cosmos.getNetworkFromRegistry('neutron'),
+  Cosmos.getNetworkFromRegistry('neutrontestnet'),
+]);
+
+networks.then(networks => reconnectSigners(networks));
+```
+
+```js index.js
+import { modals } from '@kiruse/cosmos-components';
+import { networks } from './setup.js';
+
+document.getElementById('connect-wallet').addEventListener('click', async () => {
+  modals.showWalletModal(await networks);
+});
+```
+
+My personal favorite for writing HTML is [Pug](https://pugjs.org/), although it requires some
+additional build steps to get the final HTML. The above snippet can be written in Pug as:
+
+```pug
+doctype html
+html
+  head
+    title Example Dapp
+    script(type="importmap")
+      | {
+      |   "imports": {
+      |     "@kiruse/cosmos-components": "https://esm.sh/@kiruse/cosmos-components",
+      |     "@apophis-sdk/core": "https://esm.sh/@apophis-sdk/core",
+      |     "@apophis-sdk/cosmos": "https://esm.sh/@apophis-sdk/cosmos",
+      |     "@apophis-sdk/cosmwasm": "https://esm.sh/@apophis-sdk/cosmwasm",
+      |   }
+      | }
+    script(type="module" src="index.js")
+  body
+    cosmos-connect-boundary
+      div(slot="connect")
+        button#connect-wallet Connect Wallet
+      div(slot="content")
+        | Hello,
+        cosmos-user-address
+    script(type="module" src="index.js")
+```
+
