@@ -1,0 +1,39 @@
+---
+title: "Local Signer"
+description: "Built into the Cosmos integration is a local signer that can be used with a private key or mnemonic."
+---
+
+The `LocalSigner` is not technically a part of the `@apophis-sdk/cosmos-signers` package, but instead
+built directly into the `@apophis-sdk/cosmos` package. It is a simple signer that can be used with a
+private key or mnemonic, and useful for CLI tools or server environments.
+
+```ts signers.ts
+import { LocalSigner } from '@apophis-sdk/cosmos';
+
+const privateKey = LocalSigner.generatePrivateKey();
+const mnemonic = LocalSigner.generateMnemonic();
+
+const signer1 = LocalSigner.fromPrivateKey(privateKey);
+const signer2 = LocalSigner.fromMnemonic(mnemonic);
+```
+
+Once you have a `LocalSigner`, you can use it directly to sign transactions:
+
+```ts
+import { Bank, Cosmos } from '@apophis-sdk/cosmos';
+import { signer1, signer2 } from './signers.js';
+
+const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
+
+const tx = Cosmos.tx([
+  new Bank.Send({
+    fromAddress: signer1.address,
+    toAddress: signer2.address,
+    amount: [Cosmos.coin(1_000000, 'untrn')],
+  }),
+]);
+
+await signer1.sign(network, tx);
+await Cosmos.ws(network).expectTx(tx);
+console.log(tx.hash, tx.status);
+```

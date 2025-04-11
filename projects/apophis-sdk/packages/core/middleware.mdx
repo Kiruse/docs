@@ -1,0 +1,133 @@
+---
+title: "Middleware Subsystem"
+description: "At the heart of the Apophis SDK lies the middleware subsystem."
+---
+
+As an Apophis SDK consumer, you will likely only ever need to call `Apophis.use(...middlewares)` to
+register the middlewares you are interested in:
+
+```ts
+import { Apophis } from '@apophis-sdk/core';
+import { DefaultCosmosMiddlewares } from '@apophis-sdk/cosmos';
+import { DefaultCosmWasmMiddlewares } from '@apophis-sdk/cosmwasm';
+
+Apophis.use(...DefaultCosmosMiddlewares, ...DefaultCosmWasmMiddlewares);
+```
+
+Duplicate middlewares are de-duped by instance, so you can "nest" middlewares to bundle dependencies.
+The `DefaultCosmWasmMiddlewares`, for example, depend on the `DefaultCosmosMiddlewares`, so you
+really only need to register `...DefaultCosmosMiddlewares`, but it won't hurt to also register
+`...DefaultCosmWasmMiddlewares`.
+
+## Implementing Middleware
+Middlewares are arbitrary multi-level objects that are registered in a global array and executed by
+some strategy defined at the callsite. If a middleware does not implement a method, it is
+automatically skipped. The following examples are valid middlewares:
+
+```ts
+import { type MiddlewareImpl } from '@apophis-sdk/core/middleware.js';
+
+const MyMiddleware1 = {
+  addresses: {
+    alias(address: string): string {
+      return address;
+    },
+  },
+} satisfies MiddlewareImpl;
+
+const MyMiddleware2: MiddlewareImpl = {
+  addresses: {
+    resolve(address: string): string {
+      return address;
+    },
+  },
+  encoding: {
+    encode(network: NetworkConfig, encoding: string, value: unknown) {
+      if (network.ecosystem !== 'cosmos') return;
+      if (encoding !== 'json') return;
+      return JSON.stringify(value);
+    },
+  },
+};
+
+const MyMiddleware3 = {} satisfies MiddlewareImpl;
+```
+
+## Pipelines
+Callsites of middlewares must specify the strategy by which to execute the middleware stack. There
+are various strategies implemented by the internal MiddlewarePipeline class, which adheres to the
+following interface:
+
+```ts
+interface MiddlewarePipeline<KP extends string[]> {
+  /** Helper to invert the pipeline execution order */
+  inv(): MiddlewarePipeline<KP>;
+
+  /** Send a single value through the entire pipeline, transforming it along
+   * the way.
+   *
+   * If a middleware returns `undefined` it is simply skipped and the value
+   * remains unchanged in this round.
+   */
+  transform(arg: TransformType<KP>): TransformType<KP>;
+
+  /** Call every middleware endpoint in order, passing in the given arguments.
+   * The first middleware that returns any value other than `undefined` wins
+   * and its result returned to the callsite.
+   *
+   * If no middleware returns a value, throws a MiddlewarePipelineError.
+   */
+  fifo(...args: FifoArgs<KP>): Defined<FifoResult<KP>>;
+
+  /** Like `fifo` but returns `undefined` rather than throwing an error. */
+  fifoMaybe(...args: FifoArgs<KP>): Defined<FifoResult<KP>> | undefined;
+
+  /** Like `fifo` but async. Awaits every middleware in order and can thus be slow. */
+  fifoAsync(...args: FifoArgs<KP>): Promise<Awaited<Defined<FifoResult<KP>>>>;
+
+  /** Like `fifoAsync` but returns `undefined` rather than throwing an error. */
+  fifoAsyncMaybe(...args: FifoArgs<KP>): Promise<Awaited<Defined<FifoResult<KP>>> | undefined>;
+
+  /** A way for callsites to notify middlewares of some occurrence.
+   * The notification handlers may be async. All errors and rejections will
+   * be caught and logged with `console.error`.
+   */
+  notify(...args: NotifyArgs<KP>): Promise<void>;
+
+  /** Like `notify` but the handlers cannot be async. */
+  notifySync(...args: NotifyArgs<KP>): void;
+
+  /** A reducer to iterate over and invoke all middlewares in order,
+   * aggregating their result by some arbitrary logic.
+   *
+   * Admittedly, typing this reducer is tough and needs more work.
+   */
+  reduce(args: any[], reducer: (result: any, response: any) => any, initial: any): any;
+}
+```
+
+`KP` is the key path to the middleware and serves to extract the correct function signature.
+Following is an example of how to use the `mw` function which produces such a `MiddlewarePipeline`:
+
+```ts
+import { mw } from '@apophis-sdk/core';
+
+const addr = mw('addresses', 'compute').inv().fifo(network, pubkey);
+```
+
+## Middleware Stack
+The mw method exposes some additional properties. One of these properties is mw.stack which is an
+array of all registered middlewares. If necessary, you can inspect or even alter the stack:
+
+```ts
+import { mw } from '@apophis-sdk/core/middleware.js';
+import { MemoryAddressBook } from '@apophis-sdk/core/address.js';
+
+// Insert a middleware before `MemoryAddressBook` or append to the end if not found
+let idx = mw.stack.findIndex(m => m instanceof MemoryAddressBook);
+if (idx !== -1) {
+  mw.stack.splice(idx, 0, MyMiddleware);
+} else {
+  mw.stack.push(MyMiddleware);
+}
+```

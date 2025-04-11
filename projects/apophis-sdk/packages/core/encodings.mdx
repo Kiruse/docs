@@ -1,0 +1,163 @@
+---
+title: "Encoding Subsystem"
+description: "Apophis uses a fairly non-standard encoding subsystem, built on top of its middleware subsystem."
+---
+
+The `@apophis-sdk/core` package contains definitions for protobuf, and the `@apophis-sdk/cosmos`
+package contains definitions for Amino, a Cosmos-specific encoding format. Cosmos messages generally
+have to support both formats. To do so, the Messages concept was introduced. However, messages are
+not a concrete class or interface. Instead, they hook into the encoding middleware.
+
+Following is the definition of the Encoding Middleware:
+
+```ts
+export interface MiddlewareEncoding {
+  encode(network: NetworkConfig, encoding: string, value: unknown): unknown;
+  decode(network: NetworkConfig, encoding: string, value: unknown): unknown;
+}
+```
+
+While it is more generic, it is typically only used to encode transaction payloads. As is often the
+case, the exact implementation may differ from network to network. Any new encoding specification
+may call this middleware with the following pattern:
+
+```ts
+import { mw, NetworkConfig } from '@apophis-sdk/core';
+import type { MiddlewareImpl } from '@apophis-sdk/core/middleware.js';
+
+// You don't have to use namespaces, but imo it works well for organizing messages
+export namespace MyEncoding {
+  export class MyType {
+    constructor(public readonly value: string) {}
+  }
+
+  export function encode(network: NetworkConfig, value: MyType) {
+    return mw('encoding', 'encode').inv().fifo(network, 'my-encoding', value);
+  }
+}
+
+export const MyEncodingMiddleware: MiddlewareImpl = {
+  encoding: {
+    encode(network: NetworkConfig, encoding: string, value: unknown) {
+      // e.g. this encoding is specific to Cosmos
+      if (network.ecosystem !== 'cosmos' || encoding !== 'my-encoding') return;
+      if (value instanceof MyEncoding.MyType) {
+        return JSON.stringify({ myType: value.value });
+      }
+    },
+    decode(network: NetworkConfig, encoding: string, value: any) {
+      if (network.ecosystem !== 'cosmos' || encoding !== 'my-encoding') return;
+      if (typeof value !== 'object' || !value || typeof value.myType !== 'string') return;
+      return new MyEncoding.MyType(value.myType);
+    },
+  },
+};
+
+MyEncoding.encode({ ... }, new MyEncoding.MyType('foobar'));
+```
+
+Generally, to implement a new encoding, you will export a custom encoding middleware as the default
+implementation. Anybody interested in overriding the encoding can do so selectively for a given
+network. The most important part is that decoding restores the class of a value, especially if other
+encodings for the same type exist.
+
+## Implicit Interfaces
+The default built-in ProtoBuf and Amino encodings used for the Cosmos integration use a concept of
+*implicit interfaces* - i.e. types are made compatible without expressly implementing a TypeScript
+interface. This is done because it is not the class instance that needs to adhere to a specific
+interface, but the class itself, but the `implements` keyword gives no such assurance over the
+actual class.
+
+The ProtoBuf and Amino encodings use the `registerDefaultProtobuf` and `registerDefaultAmino`
+methods respectively. The signature of these methods ensures a class is actually compatible. These
+methods use the following definitions:
+
+```ts @apophis-sdk/core/encoding/protobuf/any.ts
+export type ProtobufType<T1 extends string = string, T2 = any> = {
+  get protobufTypeUrl(): T1;
+  toProtobuf(value: T2): Uint8Array;
+  fromProtobuf(value: Uint8Array): T2;
+};
+
+export declare function registerDefaultProtobuf(...types: ProtobufType[]): void;
+```
+
+```ts @apophis-sdk/cosmos/encoding/amino.ts
+export type AminoType<T1 extends string = string, T2 = any> = {
+  get aminoTypeUrl(): T1;
+  new(data: T2): { get data(); T2 }
+};
+
+export declare function registerDefaultAmino(...types: AminoType[]): void;
+```
+
+This allows establishing the connection between POJOs (the plain data objects after deserialization)
+and their abstractions.
+
+## Specialization: Public Keys
+As Web3 is built fundamentally on asymmetric cryptography, public and private keys are a core concept
+vital to all contemporary blockchains. However, just because two blockchains happen to use the
+ed25519 or secp256k1 curves doesn't mean they use the same binary representation for transmission or
+internal storage. Thus, the `@apophis-sdk/core` package only contains a rudimentary, generic
+class with generalized public key types, and the `@apophis-sdk/cosmos` package implements their
+encodings as follows:
+
+```ts @apophis-sdk/core/crypto/pubkey.ts
+import type { Bytes } from '@apophis-sdk/core/types.js';
+
+export class PublicKey<T extends string = 'secp256k1' | 'ed25519'> {
+  constructor(
+    public readonly type: T,
+    public readonly bytes: Bytes,
+  ) {}
+}
+
+/** Interface defining `pubkey` functions. Augment to add new pubkey types. */
+export interface Pubkeys {
+  secp256k1(bytes: Bytes): PublicKey<'secp256k1'>;
+  ed25519(bytes: Bytes): PublicKey<'ed25519'>;
+}
+
+export const pubkey: Pubkeys = {
+  secp256k1: (bytes: Bytes) => new PublicKey('secp256k1', bytes),
+  ed25519: (bytes: Bytes) => new PublicKey('ed25519', bytes),
+}
+```
+
+```ts @apophis-sdk/cosmos/crypto/pubkey.ts
+export const CosmosPubkeyMiddleware: MiddlewareImpl = {
+  addresses: {
+    compute(network: NetworkConfig, value: PublicKey) {
+      if (network.ecosystem !== 'cosmos') return;
+      if (value.type !== 'secp256k1') return;
+      if (value.bytes.length !== 33)
+        throw new Error('Invalid pubkey length, expected 33');
+      const prefix = network.addressPrefix;
+      return bech32.encode(prefix, bech32.toWords(ripemd160(sha256(value.bytes))));
+    }
+  },
+  encoding: {
+    encode(network: NetworkConfig, encoding: string, value: unknown) {
+      if (network.ecosystem !== 'cosmos') return;
+      if (value instanceof PublicKey) {
+        return // ... encoded
+      }
+    },
+    decode(network: NetworkConfig, encoding: string, value: unknown) {
+      if (network.ecosystem !== 'cosmos') return;
+      const type = // ... extract generalized type from Amino/protobuf
+      const bytes = // ... extract pubkey bytes from Amino/protobuf
+      return new PublicKey(type, bytes);
+    },
+  },
+};
+```
+
+This bypasses the default ProtoBuf and Amino registries, but makes the types compatible with both
+encodings nonetheless, without altering the `PublicKey` base class. Note that, of course, the
+middleware has to be registered with `mw.use` (though it is included in `DefaultCosmosMiddlewares`).
+
+As you can see, it also defines how these public keys are converted to addresses for specific
+networks. A real use case for this is the Injective blockchain which uses a different elliptic
+curve for its key pairs in order to be compatible with the EVM, and thus arrives at a different
+address format.

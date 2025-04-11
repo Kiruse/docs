@@ -1,0 +1,100 @@
+---
+title: "Apophis Messages"
+description: "Messages are the highest form of abstraction within the Apophis SDK."
+---
+
+Apophis allows integrating new types for de/serialization with standard encodings (currently
+ProtoBuf and Amino) by following a specific pattern.
+
+Generally, the default encodings expect your messages to be implemented as classes. The ProtoBuf and
+Amino encoding subsystems define the following types, as well as these methods for registration of
+new default types:
+
+```ts @apophis-sdk/core/encoding/protobuf/any.ts
+export type ProtobufType<T1 extends string = string, T2 = any> = {
+  get protobufTypeUrl(): T1;
+  toProtobuf(value: T2): Uint8Array;
+  fromProtobuf(value: Uint8Array): T2;
+};
+
+export declare function registerDefaultProtobuf(...types: ProtobufType[]): void;
+```
+
+```ts @apophis-sdk/cosmos/encoding/amino.ts
+export type AminoType<T1 extends string = string, T2 = any> = {
+  get aminoTypeUrl(): T1;
+  new(data: T2): { get data(); T2 }
+};
+
+export declare function registerDefaultAmino(...types: AminoType[]): void;
+```
+
+Correspondingly, the Cosmos Bank Send message is implemented as follows:
+
+```ts
+import { registerDefaultProtobufs } from '@apophis-sdk/core/encoding/protobuf/any.js';
+import type { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin';
+import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx';
+import { registerDefaultAminos } from '../encoding/amino';
+
+export namespace Bank {
+  export type SendData = {
+    fromAddress: string;
+    toAddress: string;
+    amount: Coin[];
+  }
+
+  export class Send {
+    static readonly protobufTypeUrl = '/cosmos.bank.v1beta1.MsgSend';
+    static readonly aminoTypeUrl = 'cosmos-sdk/MsgSend';
+
+    constructor(public data: SendData) {}
+
+    static toProtobuf(value: Send): Uint8Array {
+      return MsgSend.encode(MsgSend.fromPartial(value.data)).finish();
+    }
+
+    static fromProtobuf(value: Uint8Array): Send {
+      const { fromAddress, toAddress, amount } = MsgSend.decode(value);
+      return new Send({ fromAddress, toAddress, amount });
+    }
+  };
+
+  registerDefaultProtobufs(Send);
+  registerDefaultAminos(Send);
+}
+```
+
+As the naming suggests, these are merely "default" types. Using the
+[Middleware Subsystem](/projects/apophis-sdk/packages/core/middleware.mdx), nearly every single
+aspect of the Apophis SDK can be fine-tuned to the requirements of a specific blockchain, with these
+default types used as fallbacks.
+
+The beauty of this approach is that the same message class can be used for a variety of blockchains,
+and can even be somewhat standardized across entirely different blockchains. Likewise, it allows
+deserializing transactions into semantic objects, rather than just raw bytes or plain data objects.
+
+## Amino
+Amino is a legacy JSON sub-specification for blockchains that use the Cosmos SDK. It is superceded
+by ProtoBuf, but is still widely used, and the only format [Ledger hardware wallets](https://ledger.com)
+support in Cosmos.
+
+Amino is defined in the `@apophis-sdk/cosmos` package, but listed here for completeness.
+
+## ProtoBuf
+[ProtoBuf](https://protobuf.dev/) is a widely adopted data transmission format developed and
+primarily maintained by Google. Unlike Amino, it is a size-optimized binary format, and requires
+more complex de/serialization.
+
+Currently, the ProtoBuf subsystem requires that you provide the correct de/serialization, but
+eventually, I will implement a micro-framework for the definition of ProtoBuf types within the
+Apophis SDK.
+
+## Other encodings
+Other blockchains such as Solana and Ethereum use different encodings. When the time comes to
+develop integrations for these ecosystems, I will add corresponding encoding subsystems to this SDK.
+
+If you are looking to integrate your own encoding, please follow the above pattern, and develop a
+corresponding middleware. Your middleware may use the `["core", "init"]` hook to register existing
+messages (if applicable, e.g. `Bank.Send`) for your new encoding so SDK consumers may seamlessly
+integrate your blockchain.

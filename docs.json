@@ -23,7 +23,10 @@
           {
             "group": "@apophis-sdk/core",
             "pages": [
-              "projects/apophis-sdk/packages/core/overview"
+              "projects/apophis-sdk/packages/core/overview",
+              "projects/apophis-sdk/packages/core/messages",
+              "projects/apophis-sdk/packages/core/encodings",
+              "projects/apophis-sdk/packages/core/middleware"
             ]
           },
           {
@@ -49,7 +52,8 @@
               "projects/apophis-sdk/packages/cosmos-signers/overview",
               "projects/apophis-sdk/packages/cosmos-signers/keplr",
               "projects/apophis-sdk/packages/cosmos-signers/leap",
-              "projects/apophis-sdk/packages/cosmos-signers/walletconnect"
+              "projects/apophis-sdk/packages/cosmos-signers/walletconnect",
+              "projects/apophis-sdk/packages/cosmos-signers/local-signer"
             ]
           }
         ]
