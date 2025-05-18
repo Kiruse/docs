@@ -29,6 +29,22 @@ export type AminoType<T1 extends string = string, T2 = any> = {
 export declare function registerDefaultAmino(...types: AminoType[]): void;
 ```
 
+With v0.3.1, a new solution for protobufs is introduced and will eventually supersede the existing
+in v0.4.0:
+
+```ts
+import { IMessage } from '@kiruse/hiproto';
+
+export type ProtobufSchemaType<T1 extends string = string, T2 = any> = {
+  get protobufTypeUrl(): T1;
+  get protobufSchema(): IMessage<any, T2>;
+  new (data: T2): any;
+};
+```
+
+This new method leverages a new in-house protobuf abstraction [hiproto](https://github.com/kiruse/hiproto.ts)
+which uses a zod-like API to define protobuf schemas.
+
 Correspondingly, the Cosmos Bank Send message is implemented as follows:
 
 ```ts
@@ -86,9 +102,77 @@ Amino is defined in the `@apophis-sdk/cosmos` package, but listed here for compl
 primarily maintained by Google. Unlike Amino, it is a size-optimized binary format, and requires
 more complex de/serialization.
 
-Currently, the ProtoBuf subsystem requires that you provide the correct de/serialization, but
-eventually, I will implement a micro-framework for the definition of ProtoBuf types within the
-Apophis SDK.
+Formerly, you had to provide the correct de/serialization for your protobuf types yourself. With
+v0.3.1, we are now migrating to [hiproto](https://github.com/kiruse/hiproto.ts). Following is an
+example of how I've implemented the `Coin` schema:
+
+```ts
+import hpb from '@kiruse/hiproto';
+
+const pbCoin = hpb.message({
+  denom: hpb.string(1),
+  amount: hpb.string(2).transform<bigint>({
+    encode: (value) => value.toString(),
+    decode: (value) => BigInt(value),
+    default: 0n,
+  }),
+});
+```
+
+You can then reference this schema in your own messages:
+
+```ts ./protobuf/schema.ts
+import { pbCoin } from '@apophis-sdk/cosmos/encoding/protobuf/core';
+
+const pbMsgSend = hpb.message({
+  fromAddress: hpb.string(1),
+  toAddress: hpb.string(2),
+  amount: hpb.repeated.array(3, pbCoin),
+});
+```
+
+And de/serialize it as follows:
+
+```ts
+import { Cosmos } from '@apophis-sdk/cosmos';
+import { pbMsgSend } from './protobuf/schema.js';
+
+const encoded = pbMsgSend.encode({
+  fromAddress: 'cosmos1...',
+  toAddress: 'cosmos1...',
+  amount: [Cosmos.coin(1_000_000n, 'untrn')],
+}).toShrunk().toUint8Array();
+
+const decoded = pbMsgSend.decode(encoded);
+console.log(`${decoded.fromAddress} -> ${decoded.toAddress}: ${decoded.amount.length} coins`);
+```
+
+You can then register your message class with the `registerDefaultProtobufSchema` function:
+
+```ts ./messages/bank.ts
+import { registerDefaultAminos, registerDefaultProtobufSchema } from '@apophis-sdk/core/encoding/protobuf/any.js';
+import hpb from '@kiruse/hiproto';
+import { pbMsgSend } from './protobuf/schema.js';
+
+export namespace Bank {
+  export type SendData = hpb.infer<typeof pbMsgSend>;
+
+  export class Send {
+    static readonly aminoTypeUrl = 'cosmos-sdk/MsgSend';
+    static readonly protobufTypeUrl = '/cosmos.bank.v1beta1.MsgSend';
+    static readonly protobufSchema = pbMsgSend;
+    constructor(public data: SendData) {}
+  }
+
+  registerDefaultAminos(Send);
+  registerDefaultProtobufSchema(Send);
+}
+```
+
+Note that this is currently in a transitional state. For now, Apophis' Cosmos module still uses the
+[cosmjs-types](https://github.com/cosmos/cosmjs-types) package for its standard messages, but these
+will be gradually migrated to the new *hiproto*-based approach. The existing methodology is now
+marked as deprecated and will be removed in v0.4.0.
 
 ## Other encodings
 Other blockchains such as Solana and Ethereum use different encodings. When the time comes to
