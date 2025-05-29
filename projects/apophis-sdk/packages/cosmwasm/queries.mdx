@@ -20,9 +20,9 @@ Apophis.use(...DefaultCosmWasmMiddlewares);
 const network = await Cosmos.getNetworkFromRegistry('neutrontestnet');
 const contract = 'neutron1...';
 
-const data = await CosmWasm.query.smart<MyResponse>(network, contract, CosmWasm.toBinary({
+const data = await CosmWasm.query.smart<MyResponse>(network, contract, {
   myQuery: {},
-}));
+});
 console.log(data); // typically, the response is already JSON-decoded by the RPC
 ```
 

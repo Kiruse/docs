@@ -24,12 +24,9 @@ await Cosmos.ws(network).ready();
 const response = await CosmWasm.query.smart({
   network,
   'neutron1...', // contract address
-  // smart query messages are only JSON-formatted by convention, not by requirement
-  // toBinary is a helper to serialize JSON messages
-  // it's really just implemented using `TextEncoder`, `JSON`, and a marshaller
-  CosmWasm.toBinary({
+  {
     config: {},
-  }),
+  },
 });
 console.log(response);
 
@@ -37,13 +34,18 @@ await CosmWasm.execute(
   network,
   signer,
   'neutron1...', // contract address
-  // same JSON convention here
-  CosmWasm.toBinary({
+  {
     increment: {},
-  }),
+  },
   [Cosmos.coin(1_000000n, 'untrn')], // optional native coin "funds" to pass along the call
 );
 ```
+
+**NOTE:** Previously, I was under the impression that smart contract messages were JSON-encoded only
+by convention. This is false. Thus, previously, any smart contract message had to be passed in using
+`CosmWasm.toBinary`. This, however, broke Amino support. I thus had to remove it from messages &
+queries. The `CosmWasm.toBinary` helper is still useful to encode sub-messages, e.g. for the *send*
+message of CW20 tokens.
 
 ## Outlook
 There is still work to be done on the CosmWasm integration. Namely, further abstraction of smart
