@@ -86,6 +86,27 @@ iterates over ALL state items of a smart contract, which includes all entries in
 it likely has no real use for Dapps, but it can be incredibly useful for debugging, introspection,
 and reverse engineering.
 
+### About Key Paths
+CosmWasm uses a simple key/value storage system - [at the time of writing](https://github.com/cosmos/cosmos-sdk/blob/442c247d2914195f3b391697f25ec1cc70df88cc/go.mod#L183),
+this was [LevelDB](https://github.com/google/leveldb). However, to support complex data structures
+like maps and lists, the keys are prefixed and encoded to binary.
+
+This encoding follows a simple algorithm conveniently accessible through 3 methods:
+
+```ts
+import { CosmWasm } from '@apophis-sdk/cosmwasm';
+
+const key = CosmWasm.encodeKeypath(['array-prefix', 'item-index']);
+const decoded = CosmWasm.decodeKeypath(key);
+const maybeDecoded = CosmWasm.decodeKeypathMaybe(key);
+```
+
+`encodeKeypath` naturally encodes a keypath into a binary string. `decodeKeypath` is its inverse.
+And `decodeKeypathMaybe` is a variant that returns `null` if the keypath is not valid rather than
+throwing an error.
+
+The `encodeKeypath` method is used under the hood by `CosmWasm.query.raw`.
+
 ## Contract Info Queries
 **Contract Info Queries** are non-RPC queries, i.e. they are not defined in the RPC directly but are
 defined as a standard on a *Raw Query* through the [CW2](https://crates.io/crates/cw2) standard.
