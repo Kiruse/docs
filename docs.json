@@ -17,7 +17,8 @@
             "group": "Get Started",
             "pages": [
               "projects/apophis-sdk/introduction",
-              "projects/apophis-sdk/raison-detre"
+              "projects/apophis-sdk/raison-detre",
+              "projects/apophis-sdk/examples"
             ]
           },
           {
